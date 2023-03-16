@@ -138,7 +138,7 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
       contents.begin(), contents.end(),
       [](const content_t& content) { return content.gsd == kUnSupport; }));
   auto end_time = std::chrono::system_clock::now();
-  LOG(INFO) << "Finishing loading DOTA, get " << contents.size() << " images,"
+  LOG(INFO) << "finishing loading DOTA, get " << contents.size() << " images,"
             << " using "
             << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
                                                                      start_time)

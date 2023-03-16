@@ -11,6 +11,7 @@
 #include "box_type.h"
 #include "dota_utils.h"
 #include "loguru.hpp"
+#include "poly_iou.hpp"
 
 using std::endl;
 using std::list;
