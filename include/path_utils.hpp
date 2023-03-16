@@ -80,6 +80,7 @@ inline bool is_dir(const fs::path& path) {
   }
   return fs::is_directory(path);
 }
+
 inline bool is_file(const fs::path& path) {
   if (!is_exist(path)) {
     errno = ENOENT;
