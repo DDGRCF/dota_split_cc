@@ -65,7 +65,7 @@ inline std::string stem(const std::string& path) {
     return path.substr(left + 1);
   } else if (left != std::string::npos && right != std::string::npos &&
              right > left) {
-    return path.substr(left + 1, right - left);
+    return path.substr(left + 1, right - left - 1);
   } else {
     return path;
   }
@@ -91,7 +91,7 @@ inline bool is_file(const fs::path& path) {
 inline std::vector<std::string> glob(const std::string& path) {
   std::vector<std::string> res{};
   const std::string& dirname = path::dirname(path);
-  if (!path::is_exist(path)) {
+  if (!path::is_exist(dirname)) {
     return res;
   }
   int ret;
@@ -102,7 +102,7 @@ inline std::vector<std::string> glob(const std::string& path) {
       break;
     }
     res.reserve(globbuf.gl_pathc);
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < globbuf.gl_pathc; i++) {
       res.emplace_back(globbuf.gl_pathv[i]);
     }
   } while (0);

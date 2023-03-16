@@ -2,6 +2,7 @@
 #include <gdal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <algorithm>
 #include <atomic>
@@ -18,6 +19,7 @@
 #include "loguru.hpp"
 #include "path_utils.hpp"
 #include "split_utils.h"
+#include "threadpool.hpp"
 
 using json = nlohmann::json;
 using std::endl;
@@ -58,6 +60,7 @@ void deal(const json &configs) {
     gaps[i] /= rates[i].get<float>();
   }
   string save_dir = configs.at("save_dir");
+  save_dir += std::to_string(time(nullptr));
   int ret = mkdir(save_dir.c_str(), 0774);
   if (ret == -1) {
     LOG(ERROR) << "mkdir " << save_dir << " " << strerror(errno) << endl;
@@ -91,12 +94,26 @@ void deal(const json &configs) {
   LOG(INFO) << "start splitting images!!!" << endl;
   auto start_time = std::chrono::system_clock::now();
   auto prog = std::atomic<int>(0);
-  auto worker = [configs](const std::pair<content_t, string> info) {
-    // return single_split(info, )
+  auto worker = [&configs, &sizes, &gaps,
+                 &prog](const std::pair<content_t, string> info) {
+    vector<float> padding_value(configs.at("padding_value").size(), 0);
+    for (auto &value : configs.at("padding_value")) {
+      padding_value.push_back(value);
+    }
+    return single_split(info, sizes, gaps, configs.at("img_rate_thr"),
+                        configs.at("iof_thr"), configs.at("no_padding"),
+                        padding_value, configs.at("save_dir"),
+                        configs.at("anno_dir"), configs.at("img_ext"), prog);
   };
-  // vector<string> img_dirs(ann_dirs.size());
-  // for (int i = 0; i < img_dirs.size(); i++) {
-  // }
+  const int nthread = configs.at("nproc");
+  if (nthread > 1) {
+    auto pool = std::threadpool(nthread);
+    auto _patch_infos = pool.map_container(worker, infos);
+  } else {
+    for (auto &info : infos) {
+      worker(info);
+    }
+  }
   auto end_time = std::chrono::system_clock::now();
   LOG(INFO) << "finish splitting images in "
             << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
@@ -110,23 +127,6 @@ int main(int argc, char **argv) {
   json configs = parse_json(argc, argv);
   GDALAllRegister();
   LOG(INFO) << "\n" << configs.dump(2) << endl;
-  // deal(configs);
-  string path =
-      "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/"
-      "dota_split/dota_img_split/include/string_utils.hpp";
-  auto basename = path::basename(path);
-  auto dirname = path::dirname(path);
-  auto suffix = path::suffix(path);
-  auto stem = path::stem(path);
-  LOG(INFO) << basename << endl;
-  LOG(INFO) << dirname << endl;
-  LOG(INFO) << suffix << endl;
-  LOG(INFO) << stem << endl;
-  // int ret = path::is_dir(path);
-  // if (ret == 0) {
-  //   LOG(INFO) << "yes" << endl;
-  // } else {
-  //   LOG(INFO) << "no" << endl;
-  // }
+  deal(configs);
   return 0;
 }

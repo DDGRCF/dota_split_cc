@@ -28,7 +28,7 @@ enum ContentType {
 content_t _load_dota_txt(const string& txt_file) {
   float gsd = kEmpty;
   vector<vector<float>> bboxes;
-  vector<int> labels;
+  vector<string> labels;
   vector<int> diffs;
   if (!txt_file.empty()) {
     do {
@@ -51,6 +51,10 @@ content_t _load_dota_txt(const string& txt_file) {
 
       string line;
       while (std::getline(input_file, line)) {  // 读入消耗掉换行符
+        auto left = line.rfind('\r');
+        if (left != std::string::npos) {
+          line = line.substr(0, left);
+        }
         if (str::starts_with(line, "gsd")) {
           auto pos = line.find(':');
           if (pos != string::npos) {
@@ -59,11 +63,11 @@ content_t _load_dota_txt(const string& txt_file) {
               gsd = std::stof(gsd_str);
             } catch (std::invalid_argument& invalid) {
               gsd = kParseError;
-              LOG(ERROR) << "convert gsd error " << invalid.what() << endl;
             }
           }
           continue;
-        } else if (str::starts_with(line, "imagesource")) {
+        } else if (str::starts_with(line, "imagesource") ||
+                   str::starts_with(line, "NAN")) {
           continue;
         }
         auto line_split = str::split(line);
@@ -73,7 +77,7 @@ content_t _load_dota_txt(const string& txt_file) {
                          bbox.begin(),
                          [](string valstr) { return std::stof(valstr); });
           bboxes.push_back(bbox);
-          labels.push_back(std::stoi(line_split[8]));
+          labels.push_back(line_split[8]);
           diffs.push_back(line_split.size() == 10 ? std::stoi(line_split[9])
                                                   : 0);
         }
@@ -86,7 +90,7 @@ content_t _load_dota_txt(const string& txt_file) {
 content_t _load_dota_single(const string& img_file, const string& ann_dir) {
   static std::unordered_set<string> support_ext{"jpg", "JPG", "png", "tif",
                                                 "bmp"};
-  auto img_id = path::basename(img_file);
+  auto img_id = path::stem(img_file);
   auto ext = path::suffix(img_file);
   if (support_ext.find(ext) == support_ext.end()) {
     return content_t{kUnSupport};
@@ -99,6 +103,8 @@ content_t _load_dota_single(const string& img_file, const string& ann_dir) {
   content_t content = _load_dota_txt(txt_file);
   content.width = width;
   content.height = height;
+  content.filename = path::basename(img_file);
+  content.id = img_id;
   GDALClose(static_cast<GDALDatasetH>(dataset));
   return content;
 }
@@ -107,7 +113,7 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
                             const int& nthread) {
   LOG(INFO) << "starting loading DOTA dataset information." << endl;
   auto start_time = std::chrono::system_clock::now();
-  auto _load_func = [ann_dir](const string& img_file) {
+  auto _load_func = [&ann_dir](const string& img_file) {
     return _load_dota_single(img_file, ann_dir);
   };
   auto path_set = path::glob(img_dir + "*");
@@ -133,10 +139,10 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
       [](const content_t& content) { return content.gsd == kUnSupport; }));
   auto end_time = std::chrono::system_clock::now();
   LOG(INFO) << "Finishing loading DOTA, get " << contents.size() << " images,"
-            << " using"
+            << " using "
             << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
                                                                      start_time)
                    .count()
-            << "s." << endl;
+            << "ms." << endl;
   return contents;
 }

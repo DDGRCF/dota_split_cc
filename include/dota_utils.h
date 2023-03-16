@@ -12,7 +12,7 @@ typedef struct {
   int height;
   typedef struct {
     std::vector<std::vector<float>> bboxes;
-    std::vector<int> labels;
+    std::vector<std::string> labels;
     std::vector<int> diffs;
   } ann_t;
   ann_t ann;
