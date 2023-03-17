@@ -8,7 +8,7 @@ typedef struct {
   std::vector<std::vector<float>> bboxes;
   std::vector<std::string> labels;
   std::vector<int> diffs;
-  std::vector<bool> turnc;
+  std::vector<bool> trunc;
 } ann_t;
 
 typedef struct {

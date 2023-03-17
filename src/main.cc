@@ -5,7 +5,7 @@
 #include <time.h>
 
 #include <algorithm>
-#include <atomic>
+// #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -93,9 +93,10 @@ void deal(const json &configs) {
 
   LOG(INFO) << "start splitting images!!!" << endl;
   auto start_time = std::chrono::system_clock::now();
-  auto prog = std::atomic<int>(0);
-  auto worker = [&configs, &sizes, &gaps,
-                 &prog](const std::pair<content_t, string> info) {
+  size_t prog = 0;
+  std::mutex lock;
+  auto worker = [&configs, &sizes, &gaps, &prog, &lock,
+                 &infos](const std::pair<content_t, string> info) {
     vector<float> padding_value(configs.at("padding_value").size(), 0);
     for (auto &value : configs.at("padding_value")) {
       padding_value.push_back(value);
@@ -103,7 +104,8 @@ void deal(const json &configs) {
     return single_split(info, sizes, gaps, configs.at("img_rate_thr"),
                         configs.at("iof_thr"), configs.at("no_padding"),
                         padding_value, configs.at("save_dir"),
-                        configs.at("anno_dir"), configs.at("img_ext"), prog);
+                        configs.at("anno_dir"), configs.at("img_ext"),
+                        infos.size(), prog, lock);
   };
   const int nthread = configs.at("nproc");
   if (nthread > 1) {
