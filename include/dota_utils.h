@@ -5,16 +5,18 @@
 #include <vector>
 
 typedef struct {
+  std::vector<std::vector<float>> bboxes;
+  std::vector<std::string> labels;
+  std::vector<int> diffs;
+  std::vector<bool> turnc;
+} ann_t;
+
+typedef struct {
   float gsd;
   std::string filename;
   std::string id;
   int width;
   int height;
-  typedef struct {
-    std::vector<std::vector<float>> bboxes;
-    std::vector<std::string> labels;
-    std::vector<int> diffs;
-  } ann_t;
   ann_t ann;
 } content_t;
 

@@ -7,8 +7,11 @@
 #include <type_traits>
 
 namespace std {
+
 const int MaxN = 10;
 const float Eps = 1e-6;
+
+enum OverLaps { kIoU = 0, kIoF = 1 };
 
 template <typename T>
 inline int sig(T d) {
@@ -148,12 +151,12 @@ inline T rotated_boxes_intersection(Point<T> (&pts1)[MaxN], const uint8_t& n1,
 
 template <typename T>
 inline T single_poly_iou_rotated(T const* const box1_raw,
-                                 T const* const box2_raw) {
-  static_assert((is_same_v<decay_t<box1_raw>, float> ||
-                 is_same_v<decay_t<box1_raw>,
-                           double>)&&(is_same_v<decay_t<box2_raw>, float> ||
-                                      is_same_v<decay_t<box2_raw>, double>),
-                "box1 and box2 must be float or double");
+                                 T const* const box2_raw,
+                                 const bool& mode = kIoU) {
+  static_assert(
+      (is_same_v<decay_t<T>, float> || is_same_v<decay_t<T>, double>)&&(
+          is_same_v<decay_t<T>, float> || is_same_v<decay_t<T>, double>),
+      "box1 and box2 must be float or double");
   Point<T> pts1[MaxN];
   const uint8_t n1 = 4;
   Point<T> pts2[MaxN];
@@ -168,8 +171,15 @@ inline T single_poly_iou_rotated(T const* const box1_raw,
   }
 
   T inter_area = rotated_boxes_intersection(pts1, n1, pts2, n2);
-  T union_area = fabs(area(pts1, n1)) + fabs(area(pts2, n2)) - inter_area;
+  T union_area;
+  if (mode == kIoU) {
+    union_area = fabs(area(pts1, n1)) + fabs(area(pts2, n2)) - inter_area;
+  } else if (mode == kIoF) {
+    union_area = fabs(area(pts1, n1));
+  }
+
   T iou = 0;
+
   if (union_area == 0) {
     iou = (inter_area + 1) / (union_area + 1);
   } else {
@@ -178,6 +188,7 @@ inline T single_poly_iou_rotated(T const* const box1_raw,
 
   return iou;
 }
+
 }  // namespace std
 
 #endif
