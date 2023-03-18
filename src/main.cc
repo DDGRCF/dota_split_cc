@@ -5,7 +5,6 @@
 #include <time.h>
 
 #include <algorithm>
-// #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iostream>

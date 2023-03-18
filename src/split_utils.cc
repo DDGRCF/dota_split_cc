@@ -11,6 +11,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "dota_utils.h"
@@ -22,6 +23,21 @@ using std::endl;
 using std::list;
 using std::string;
 using std::vector;
+
+string get_gdal_image_type(const string& file) {
+  static const std::unordered_map<string, string> suffix2gdal{
+      {{"png", "PNG"},
+       {"BMP", "bmp"},
+       {"JPG", "JPEG"},
+       {"jpg", "JPEG"},
+       {"tif", "GTiff"}}};
+  const string& file_suffix = path::suffix(file);
+  if (suffix2gdal.find(file_suffix) == suffix2gdal.end()) {
+    return "";
+  }
+  const string& gdal_type = suffix2gdal.at(file_suffix);
+  return gdal_type;
+}
 
 list<vector<size_t>> get_sliding_window(const content_t& info,
                                         const vector<int> sizes,
@@ -180,26 +196,30 @@ size_t crop_and_save_img(const content_t& info,
       const size_t _x_num = !no_padding ? img_width : x_num;
       const size_t _y_num = !no_padding ? img_height : y_num;
 
-      GDALDriver* driver;
-      auto driver_name = dataset->GetDriver()->GetDescription();
-      driver = GetGDALDriverManager()->GetDriverByName(driver_name);
       const auto tmp_band = dataset->GetRasterBand(1);
       const auto data_type = tmp_band->GetRasterDataType();
       const size_t data_size = GDALGetDataTypeSizeBytes(data_type);
-      auto out_dataset =
-          driver->Create(save_img_file.c_str(), _x_num, _y_num,
-                         dataset->GetRasterCount(), data_type, nullptr);
-      CHECK_F(out_dataset != nullptr, "GDAL Create %s: %s",
-              info.filename.c_str(), CPLGetLastErrorMsg());
-      GByte* buf = new GByte[_x_num * _y_num * data_size];
-      for (int j = 1; j <= dataset->GetRasterCount(); j++) {
-        GDALRasterBand* src_band = dataset->GetRasterBand(j);
-        GDALRasterBand* dst_band = out_dataset->GetRasterBand(j);
-        memset(
-            buf,
-            static_cast<unsigned char>(padding_value[j % padding_value.size()]),
-            _x_num * _y_num);
+      const auto nchannels = dataset->GetRasterCount();
 
+      const string& out_gdal_type = get_gdal_image_type(save_img_file);
+      CHECK_F(!out_gdal_type.empty(), "unsupport type %s ",
+              path::suffix(save_img_file).c_str());
+
+      GDALDriver* mem_driver;
+      mem_driver = GetGDALDriverManager()->GetDriverByName("MEM");
+      CHECK_F(mem_driver != nullptr, "GetDriveByName MEM: %s",
+              CPLGetLastErrorMsg());
+      GDALDataset* mem_dataset =
+          mem_driver->Create("", _x_num, _y_num, nchannels, data_type, nullptr);
+
+      GByte* buf = new GByte[_x_num * _y_num * data_size];
+      for (int j = 1; j <= nchannels; j++) {
+        auto src_band = dataset->GetRasterBand(j);  // RGB
+        auto dst_band = mem_dataset->GetRasterBand(j);
+        const int pi =
+            padding_value.size() - (j - 1) % padding_value.size() - 1;
+        memset(buf, static_cast<unsigned char>(padding_value[pi]),
+               _x_num * _y_num);
         CPLErr ret;
         ret = src_band->RasterIO(GF_Read, x_start, y_start, x_num, y_num, buf,
                                  _x_num, _y_num, data_type, 0, 0);
@@ -211,7 +231,19 @@ size_t crop_and_save_img(const content_t& info,
                 CPLGetLastErrorMsg());
       }
       delete[] buf;
+
+      GDALDriver* out_driver;
+      out_driver =
+          GetGDALDriverManager()->GetDriverByName(out_gdal_type.c_str());
+
+      auto out_dataset = out_driver->CreateCopy(
+          save_img_file.c_str(), mem_dataset, FALSE, nullptr, nullptr, nullptr);
+
+      CHECK_F(out_dataset != nullptr, "CreateCopy %s: %s",
+              save_img_file.c_str(), CPLGetLastErrorMsg());
+
       GDALClose(static_cast<GDALDatasetH>(out_dataset));
+      GDALClose(static_cast<GDALDatasetH>(mem_dataset));
     }
 
     const string& save_ann_file = anno_dir + id + ".txt";

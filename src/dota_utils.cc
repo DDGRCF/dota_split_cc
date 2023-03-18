@@ -88,8 +88,8 @@ content_t _load_dota_txt(const string& txt_file) {
 }
 
 content_t _load_dota_single(const string& img_file, const string& ann_dir) {
-  static std::unordered_set<string> support_ext{"jpg", "JPG", "png", "tif",
-                                                "bmp"};
+  static const std::unordered_set<string> support_ext{"jpg", "JPG", "png",
+                                                      "tif", "bmp"};
   auto img_id = path::stem(img_file);
   auto ext = path::suffix(img_file);
   if (support_ext.find(ext) == support_ext.end()) {
