@@ -5,7 +5,7 @@
 #include <vector>
 
 typedef struct {
-  std::vector<std::vector<float>> bboxes;
+  std::vector<std::vector<double>> bboxes;
   std::vector<std::string> labels;
   std::vector<int> diffs;
   std::vector<bool> trunc;
@@ -15,8 +15,8 @@ typedef struct {
   float gsd;
   std::string filename;
   std::string id;
-  int width;
-  int height;
+  size_t width;
+  size_t height;
   ann_t ann;
 } content_t;
 

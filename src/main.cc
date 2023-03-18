@@ -37,16 +37,15 @@ json parse_json(int argc, char **argv) {
   json data = json::parse(json_file, nullptr, true, true);
   auto &&gaps = data.at("gaps");
   auto &&sizes = data.at("sizes");
-  if (gaps.size() != sizes.size()) {
-    LOG(ERROR) << "the sizes of gaps and sizes are not same" << endl;
-    exit(1);
-  }
+  CHECK_F(gaps.size() == sizes.size(),
+          "the sizes of gaps:%ld and sizes:%ld are not same", gaps.size(),
+          sizes.size());
+
   auto &&img_dirs = data.at("img_dirs");
   auto &&ann_dirs = data.at("ann_dirs");
-  if (img_dirs.size() != ann_dirs.size()) {
-    LOG(ERROR) << "the sizes of img_dirs and ann_dirs are not same" << endl;
-    exit(1);
-  }
+  CHECK_F(img_dirs.size() == ann_dirs.size(),
+          "the sizes of img_dirs:%ld and ann_dirs:%ld are not same",
+          img_dirs.size(), ann_dirs.size());
 
   return data;
 }
@@ -61,24 +60,19 @@ void deal(const json &configs) {
   }
   string save_dir = configs.at("save_dir");
   save_dir += std::to_string(time(nullptr));
+
   int ret = mkdir(save_dir.c_str(), 0774);
-  if (ret == -1) {
-    LOG(ERROR) << "mkdir " << save_dir << " " << strerror(errno) << endl;
-    exit(1);
-  }
-  auto &&save_imgs = save_dir + "images";
-  auto &&save_files = save_dir + "annfiles";
+  CHECK_F(ret != -1, "mkdir %s: %s", save_dir.c_str(), strerror(errno));
+  auto &&save_imgs = save_dir + "images/";
+  auto &&save_files = save_dir + "annfiles/";
+
   ret = mkdir(save_imgs.c_str(), 0774);
-  if (ret == -1) {
-    LOG(ERROR) << "mkdir " << save_imgs << " " << strerror(errno) << endl;
-    exit(1);
-  }
+  CHECK_F(ret != -1, "mkdir %s: %s", save_imgs.c_str(), strerror(errno));
+
   ret = mkdir(save_files.c_str(), 0774);
-  if (ret == -1) {
-    LOG(ERROR) << "mkdir " << save_files << " " << strerror(errno) << endl;
-    exit(1);
-  }
-  LOG(INFO) << "Loading original data!!!" << endl;
+  CHECK_F(ret != -1, "mkdir %s: %s", save_files.c_str(), strerror(errno));
+
+  LOG(INFO) << "loading original data!!!" << endl;
   auto &&img_dirs = configs.at("img_dirs");
   auto &&ann_dirs = configs.at("ann_dirs");
   std::list<std::pair<content_t, string>> infos;  // 没有随机访问单节点
@@ -95,17 +89,17 @@ void deal(const json &configs) {
   auto start_time = std::chrono::system_clock::now();
   size_t prog = 0;
   std::mutex lock;
-  auto worker = [&configs, &sizes, &gaps, &prog, &lock,
+  auto worker = [&configs, &sizes, &gaps, &save_files, &save_imgs, &prog, &lock,
                  &infos](const std::pair<content_t, string> info) {
     vector<float> padding_value(configs.at("padding_value").size(), 0);
+    int i = 0;
     for (auto &value : configs.at("padding_value")) {
-      padding_value.push_back(value);
+      padding_value[i++] = value;
     }
     return single_split(info, sizes, gaps, configs.at("img_rate_thr"),
                         configs.at("iof_thr"), configs.at("no_padding"),
-                        padding_value, configs.at("save_dir"),
-                        configs.at("anno_dir"), configs.at("img_ext"),
-                        infos.size(), prog, lock);
+                        padding_value, save_imgs, save_files,
+                        configs.at("save_ext"), infos.size(), prog, lock);
   };
   const int nthread = configs.at("nproc");
   if (nthread > 1) {
@@ -118,8 +112,8 @@ void deal(const json &configs) {
   }
   auto end_time = std::chrono::system_clock::now();
   LOG(INFO) << "finish splitting images in "
-            << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
-                                                                     start_time)
+            << std::chrono::duration_cast<std::chrono::seconds>(end_time -
+                                                                start_time)
                    .count()
             << "s!!!" << endl;
 }

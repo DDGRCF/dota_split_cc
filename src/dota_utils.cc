@@ -27,7 +27,7 @@ enum ContentType {
 
 content_t _load_dota_txt(const string& txt_file) {
   float gsd = kEmpty;
-  vector<vector<float>> bboxes;
+  vector<vector<double>> bboxes;
   vector<string> labels;
   vector<int> diffs;
   if (!txt_file.empty()) {
@@ -72,7 +72,7 @@ content_t _load_dota_txt(const string& txt_file) {
         }
         auto line_split = str::split(line);
         if (line_split.size() >= 9) {
-          vector<float> bbox(8, 0);
+          vector<double> bbox(8, 0);
           std::transform(line_split.begin(), line_split.begin() + 8,
                          bbox.begin(),
                          [](string valstr) { return std::stof(valstr); });
@@ -138,11 +138,12 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
       contents.begin(), contents.end(),
       [](const content_t& content) { return content.gsd == kUnSupport; }));
   auto end_time = std::chrono::system_clock::now();
-  LOG(INFO) << "finishing loading DOTA, get " << contents.size() << " images,"
+  LOG(INFO) << "finishing loading dataset, get " << contents.size()
+            << " images,"
             << " using "
-            << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
-                                                                     start_time)
+            << std::chrono::duration_cast<std::chrono::seconds>(end_time -
+                                                                start_time)
                    .count()
-            << "ms." << endl;
+            << "s." << endl;
   return contents;
 }
