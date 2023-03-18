@@ -191,7 +191,7 @@ size_t crop_and_save_img(const content_t& info,
                          dataset->GetRasterCount(), data_type, nullptr);
       CHECK_F(out_dataset != nullptr, "GDAL Create %s: %s",
               info.filename.c_str(), CPLGetLastErrorMsg());
-      unsigned char* buf = new unsigned char[_x_num * _y_num * data_size];
+      GByte* buf = new GByte[_x_num * _y_num * data_size];
       for (int j = 1; j <= dataset->GetRasterCount(); j++) {
         GDALRasterBand* src_band = dataset->GetRasterBand(j);
         GDALRasterBand* dst_band = out_dataset->GetRasterBand(j);
@@ -224,7 +224,7 @@ size_t crop_and_save_img(const content_t& info,
             return lhs.empty() ? std::to_string(rhs)
                                : lhs + " " + std::to_string(rhs);
           });
-      auto diff = std::to_string(!ann.trunc[j] ? ann.diffs[j] + '0' : '2');
+      const char diff = !ann.trunc[j] ? ann.diffs[j] + '0' : '2';
       output_file << outline << " " << info.ann.labels[j] << " " << diff
                   << endl;
       j++;
