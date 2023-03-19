@@ -12,9 +12,10 @@
 #include <string>
 #include <vector>
 
+namespace path {
+
 namespace fs = std::filesystem;
 
-namespace path {
 static inline std::string path_join(
     const std::initializer_list<std::string> paths) {
   return std::accumulate(paths.begin(), paths.end(), std::string(""),

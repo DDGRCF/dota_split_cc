@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -27,7 +28,7 @@ using std::vector;
 string get_gdal_image_type(const string& file) {
   static const std::unordered_map<string, string> suffix2gdal{
       {{"png", "PNG"},
-       {"BMP", "bmp"},
+       {"bmp", "BMP"},
        {"JPG", "JPEG"},
        {"jpg", "JPEG"},
        {"tif", "GTiff"}}};
@@ -154,12 +155,18 @@ size_t crop_and_save_img(const content_t& info,
                          const string& img_dir, const bool& no_padding,
                          const vector<float>& padding_value,
                          const string& save_dir, const string& anno_dir,
-                         const string& img_ext) {
+                         const string& img_ext,
+                         const float& ignore_empty_prob) {
   auto img_file = img_dir + info.filename;
   GDALDataset* dataset =
       static_cast<GDALDataset*>(GDALOpen(img_file.c_str(), GA_ReadOnly));
   size_t i = 0;
   for (auto& window : windows) {
+    auto& ann = window_anns[i];
+    if (static_cast<float>(rand() % 100) / 100 < ignore_empty_prob &&
+        ann.labels.empty()) {
+      continue;
+    }
     const auto& x_start = window[0];
     const auto& y_start = window[1];
     const auto& x_stop = window[2];
@@ -169,7 +176,6 @@ size_t crop_and_save_img(const content_t& info,
           << y_start;
     const string& id = id_ss.str();
     // TODO: ignore empty patch
-    auto& ann = window_anns[i];
     auto& _bboxes = ann.bboxes;
     list<vector<double>> bboxes;
     {
@@ -207,7 +213,7 @@ size_t crop_and_save_img(const content_t& info,
 
       GDALDriver* mem_driver;
       mem_driver = GetGDALDriverManager()->GetDriverByName("MEM");
-      CHECK_F(mem_driver != nullptr, "GetDriveByName MEM: %s",
+      CHECK_F(mem_driver != nullptr, "GetDriverByName \"MEM\": %s",
               CPLGetLastErrorMsg());
       GDALDataset* mem_dataset =
           mem_driver->Create("", _x_num, _y_num, nchannels, data_type, nullptr);
@@ -219,7 +225,7 @@ size_t crop_and_save_img(const content_t& info,
         const int pi =
             padding_value.size() - (j - 1) % padding_value.size() - 1;
         memset(buf, static_cast<unsigned char>(padding_value[pi]),
-               _x_num * _y_num);
+               _x_num * _y_num * data_size);
         CPLErr ret;
         ret = src_band->RasterIO(GF_Read, x_start, y_start, x_num, y_num, buf,
                                  _x_num, _y_num, data_type, 0, 0);
@@ -242,8 +248,8 @@ size_t crop_and_save_img(const content_t& info,
       CHECK_F(out_dataset != nullptr, "CreateCopy %s: %s",
               save_img_file.c_str(), CPLGetLastErrorMsg());
 
-      GDALClose(static_cast<GDALDatasetH>(out_dataset));
       GDALClose(static_cast<GDALDatasetH>(mem_dataset));
+      GDALClose(static_cast<GDALDatasetH>(out_dataset));
     }
 
     const string& save_ann_file = anno_dir + id + ".txt";
@@ -261,7 +267,6 @@ size_t crop_and_save_img(const content_t& info,
                   << endl;
       j++;
     }
-
     i++;
   }
   GDALClose(static_cast<GDALDatasetH>(dataset));
@@ -273,15 +278,17 @@ size_t single_split(const std::pair<content_t, string>& arguments,
                     const float& img_rate_thr, const float& iof_thr,
                     const bool& no_padding, const vector<float>& padding_value,
                     const string& save_dir, const string& anno_dir,
-                    const string& img_ext, const size_t& total, size_t& prog,
-                    std::mutex& lock) {
+                    const string& img_ext, const float& ignore_empty_prob,
+                    const size_t& total, size_t& prog, std::mutex& lock) {
+  srand(4096);
+
   auto& info = arguments.first;
   auto& img_dir = arguments.second;
   auto&& windows = get_sliding_window(info, sizes, gaps, img_rate_thr);
   auto&& window_anns = get_window_obj(info, windows, iof_thr);
-  size_t num_patches =
-      crop_and_save_img(info, windows, window_anns, img_dir, no_padding,
-                        padding_value, save_dir, anno_dir, img_ext);
+  size_t num_patches = crop_and_save_img(info, windows, window_anns, img_dir,
+                                         no_padding, padding_value, save_dir,
+                                         anno_dir, img_ext, ignore_empty_prob);
 
   std::lock_guard lg(lock);
   prog += 1;

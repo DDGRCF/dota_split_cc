@@ -95,15 +95,21 @@ void deal(const json &configs) {
     for (auto &value : configs.at("padding_value")) {
       padding_value[i++] = value;
     }
-    return single_split(info, sizes, gaps, configs.at("img_rate_thr"),
-                        configs.at("iof_thr"), configs.at("no_padding"),
-                        padding_value, save_imgs, save_files,
-                        configs.at("save_ext"), infos.size(), prog, lock);
+    return single_split(
+        info, sizes, gaps, configs.at("img_rate_thr"), configs.at("iof_thr"),
+        configs.at("no_padding"), padding_value, save_imgs, save_files,
+        configs.at("save_ext"), configs.value("ignore_empty_prob", 0.),
+        infos.size(), prog, lock);
   };
   const int nthread = configs.at("nproc");
+  vector<size_t> patch_infos;
+  patch_infos.reserve(infos.size());
   if (nthread > 1) {
     auto pool = std::threadpool(nthread);
     auto _patch_infos = pool.map_container(worker, infos);
+    for (auto &_patch_info : _patch_infos) {
+      patch_infos.push_back(_patch_info.get());
+    }
   } else {
     for (auto &info : infos) {
       worker(info);
@@ -115,6 +121,10 @@ void deal(const json &configs) {
                                                                 start_time)
                    .count()
             << "s!!!" << endl;
+
+  LOG(INFO) << "splitting images "
+            << std::accumulate(patch_infos.begin(), patch_infos.end(), 0UL)
+            << " in total" << endl;
 }
 
 int main(int argc, char **argv) {
