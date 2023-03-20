@@ -2,7 +2,6 @@
 #include <gdal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include <algorithm>
 #include <chrono>
@@ -42,9 +41,11 @@ json parse_json(int argc, char **argv) {
 
   auto &&img_dirs = data.at("img_dirs");
   auto &&ann_dirs = data.at("ann_dirs");
-  CHECK_F(img_dirs.size() == ann_dirs.size(),
-          "the sizes of img_dirs:%ld and ann_dirs:%ld are not same",
-          img_dirs.size(), ann_dirs.size());
+  if (!ann_dirs.is_null()) {
+    CHECK_F(img_dirs.size() == ann_dirs.size(),
+            "the sizes of img_dirs:%ld and ann_dirs:%ld are not same",
+            img_dirs.size(), ann_dirs.size());
+  }
 
   return data;
 }
@@ -58,26 +59,31 @@ void deal(const json &configs) {
     gaps[i] /= rates[i].get<float>();
   }
   string save_dir = configs.at("save_dir");
-  save_dir += std::to_string(time(nullptr));
-
   int ret = mkdir(save_dir.c_str(), 0774);
   CHECK_F(ret != -1, "mkdir %s: %s", save_dir.c_str(), strerror(errno));
+
   auto &&save_imgs = save_dir + "images/";
   auto &&save_files = save_dir + "annfiles/";
+
+  auto &&img_dirs = configs.at("img_dirs");
+  auto &&ann_dirs =
+      configs.at("ann_dirs").is_null() ? json::array() : configs.at("ann_dirs");
 
   ret = mkdir(save_imgs.c_str(), 0774);
   CHECK_F(ret != -1, "mkdir %s: %s", save_imgs.c_str(), strerror(errno));
 
-  ret = mkdir(save_files.c_str(), 0774);
-  CHECK_F(ret != -1, "mkdir %s: %s", save_files.c_str(), strerror(errno));
+  if (!ann_dirs.empty()) {
+    ret = mkdir(save_files.c_str(), 0774);
+    CHECK_F(ret != -1, "mkdir %s: %s", save_files.c_str(), strerror(errno));
+  }
 
   LOG(INFO) << "loading original data!!!" << endl;
-  auto &&img_dirs = configs.at("img_dirs");
-  auto &&ann_dirs = configs.at("ann_dirs");
+
   std::list<std::pair<content_t, string>> infos;  // 没有随机访问单节点
   for (size_t i = 0; i < img_dirs.size(); i++) {
     auto &&img_dir = img_dirs[i].get<string>();
-    auto &&ann_dir = ann_dirs[i].get<string>();
+    string ann_dir = ann_dirs.empty() ? "" : ann_dirs[i].get<string>();
+
     auto _infos = load_dota(img_dir, ann_dir, configs.at("nproc"));
     for (auto &&_info : _infos) {
       infos.push_back(std::pair<content_t, string>{_info, img_dir});
@@ -105,7 +111,7 @@ void deal(const json &configs) {
   vector<size_t> patch_infos;
   patch_infos.reserve(infos.size());
   if (nthread > 1) {
-    auto pool = std::threadpool(nthread);
+    std::threadpool pool(nthread);
     auto _patch_infos = pool.map_container(worker, infos);
     for (auto &_patch_info : _patch_infos) {
       patch_infos.push_back(_patch_info.get());

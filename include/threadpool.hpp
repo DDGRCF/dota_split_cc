@@ -2,6 +2,7 @@
 #define THREAD_POOL_H_
 
 #include <atomic>
+#include <functional>
 #include <future>
 #include <list>
 #include <queue>
@@ -49,7 +50,7 @@ class threadpool {
     using RetType =
         decltype(f(args...));  // typename std::result_of<F(Args...)>::type,
                                // 函数 f 的返回值类型
-    auto task = make_shared<packaged_task<RetType()>>(bind(
+    auto task = make_shared<packaged_task<RetType()>>(std::bind(
         forward<F>(f), forward<Args>(args)...));  // 把函数入口及参数,打包(绑定)
     future<RetType> future = task->get_future();
     {  // 添加任务到队列
@@ -68,14 +69,15 @@ class threadpool {
     return future;
   }
   template <class F, class Container>
-  auto map_container(F&& f, Container&& c) -> vector<future<
-      decay_t<decltype(f(typename std::decay_t<Container>::value_type{}))>>> {
-    using TC = std::decay_t<Container>;
+  auto map_container(F&& f, Container&& c) -> vector<future<typename decay<
+      decltype(f(typename decay<Container>::type::value_type{}))>::type>> {
+    using TC = typename std::decay<Container>::type;
     using T = typename TC::value_type;
-    static_assert(is_same_v<TC, vector<T>> || is_same_v<TC, deque<T>> ||
-                      is_same_v<TC, list<T>>,
+    static_assert(is_same<TC, vector<T>>::value ||
+                      is_same<TC, deque<T>>::value ||
+                      is_same<TC, list<T>>::value,
                   "Container must be vector or list or deque");
-    vector<future<decay_t<decltype(f(T{}))>>> res{};
+    vector<future<typename decay<decltype(f(T{}))>::type>> res{};
     res.reserve(c.size());
     for (auto&& v : c) {
       res.push_back(commit(forward<F>(f), forward<T>(v)));

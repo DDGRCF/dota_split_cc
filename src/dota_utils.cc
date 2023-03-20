@@ -120,7 +120,7 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
   vector<content_t> contents;
   contents.reserve(path_set.size());
   if (nthread > 1) {
-    auto pool = std::threadpool(nthread);  // try openmp
+    std::threadpool pool(nthread);  // try openmp
     auto contents_future = pool.map_container(_load_func, path_set);
     for (auto& content_future : contents_future) {
       contents.push_back(content_future.get());
@@ -134,9 +134,11 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
     std::transform(path_set.begin(), path_set.end(),
                    std::back_inserter(contents), _load_func);
   }
-  contents.erase(std::remove_if(
-      contents.begin(), contents.end(),
-      [](const content_t& content) { return content.gsd == kUnSupport; }));
+  contents.erase(std::remove_if(contents.begin(), contents.end(),
+                                [](const content_t& content) {
+                                  return content.gsd == kUnSupport;
+                                }),
+                 contents.end());
   auto end_time = std::chrono::system_clock::now();
   LOG(INFO) << "finishing loading dataset, get " << contents.size()
             << " images,"

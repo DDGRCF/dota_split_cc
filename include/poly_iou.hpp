@@ -153,10 +153,11 @@ template <typename T>
 inline T single_poly_iou_rotated(T const* const box1_raw,
                                  T const* const box2_raw,
                                  const bool& mode = kIoU) {
-  static_assert(
-      (is_same_v<decay_t<T>, float> || is_same_v<decay_t<T>, double>)&&(
-          is_same_v<decay_t<T>, float> || is_same_v<decay_t<T>, double>),
-      "box1 and box2 must be float or double");
+  static_assert((is_same<typename decay<T>::type, float>::value ||
+                 is_same<typename decay<T>::type, double>::value) &&
+                    (is_same<typename decay<T>::type, float>::value ||
+                     is_same<typename decay<T>::type, double>::value),
+                "box1 and box2 must be float or double");
   Point<T> pts1[MaxN];
   const uint8_t n1 = 4;
   Point<T> pts2[MaxN];

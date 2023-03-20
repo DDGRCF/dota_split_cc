@@ -1,0 +1,27 @@
+{
+  "nproc": 1,
+  "img_dirs": [
+    "/disk0/dataset/Tianzhi/ship/train/images/"
+  ],
+  "ann_dirs": null,
+  "sizes": [
+    1024
+  ],
+  "gaps": [
+    200
+  ],
+  "rates": [
+    1.0
+  ],
+  "img_rate_thr": 0.6,
+  "iof_thr": 0.7,
+  "ignore_empty_prob": 0,
+  "no_padding": false,
+  "padding_value": [
+    104,
+    116,
+    124
+  ],
+  "save_dir": "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/dota_split/dota_img_split/resources/ss_test_split/",
+  "save_ext": ".tif"
+}

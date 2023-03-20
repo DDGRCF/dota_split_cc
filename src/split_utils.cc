@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <mutex>
@@ -105,7 +106,7 @@ vector<vector<double>> obj_overlaps_iof(const list<vector<size_t>>& bboxes1,
   const auto rows = bboxes1.size();
   const auto cols = bboxes2.size();
   if (rows * cols == 0) {
-    return vector<vector<double>>(0);
+    return vector<vector<double>>(rows, vector<double>(cols, 0));
   }
   vector<vector<double>> iofs(rows, vector<double>(cols, 0));
   int i = 0;
@@ -252,20 +253,22 @@ size_t crop_and_save_img(const content_t& info,
       GDALClose(static_cast<GDALDatasetH>(out_dataset));
     }
 
-    const string& save_ann_file = anno_dir + id + ".txt";
-    std::ofstream output_file(save_ann_file);
-    size_t j = 0;
-    for (auto& bbox : bboxes) {
-      auto outline = std::accumulate(
-          bbox.begin(), bbox.end(), string(""),
-          [](string& lhs, const int& rhs) {
-            return lhs.empty() ? std::to_string(rhs)
-                               : lhs + " " + std::to_string(rhs);
-          });
-      const char diff = !ann.trunc[j] ? ann.diffs[j] + '0' : '2';
-      output_file << outline << " " << info.ann.labels[j] << " " << diff
-                  << endl;
-      j++;
+    if (!anno_dir.empty()) {
+      const string& save_ann_file = anno_dir + id + ".txt";
+      std::ofstream output_file(save_ann_file);
+      size_t j = 0;
+      for (auto& bbox : bboxes) {
+        auto outline = std::accumulate(
+            bbox.begin(), bbox.end(), string(""),
+            [](string& lhs, const int& rhs) {
+              return lhs.empty() ? std::to_string(rhs)
+                                 : lhs + " " + std::to_string(rhs);
+            });
+        const char diff = !ann.trunc[j] ? ann.diffs[j] + '0' : '2';
+        output_file << outline << " " << info.ann.labels[j] << " " << diff
+                    << endl;
+        j++;
+      }
     }
     i++;
   }
@@ -290,7 +293,7 @@ size_t single_split(const std::pair<content_t, string>& arguments,
                                          no_padding, padding_value, save_dir,
                                          anno_dir, img_ext, ignore_empty_prob);
 
-  std::lock_guard lg(lock);
+  std::lock_guard<std::mutex> lg(lock);
   prog += 1;
   LOG(INFO) << std::setiosflags(std::ios::fixed) << std::setprecision(2)
             << static_cast<float>(prog) / total * 100 << "%"
