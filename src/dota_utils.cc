@@ -111,7 +111,7 @@ content_t _load_dota_single(const string& img_file, const string& ann_dir) {
 
 vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
                             const int& nthread) {
-  LOG(INFO) << "starting loading DOTA dataset information." << endl;
+  LOG(INFO) << "starting loading the dataset information." << endl;
   auto start_time = std::chrono::system_clock::now();
   auto _load_func = [&ann_dir](const string& img_file) {
     return _load_dota_single(img_file, ann_dir);

@@ -162,10 +162,11 @@ size_t crop_and_save_img(const content_t& info,
   GDALDataset* dataset =
       static_cast<GDALDataset*>(GDALOpen(img_file.c_str(), GA_ReadOnly));
   size_t i = 0;
+  size_t num_pathces = 0;
   for (auto& window : windows) {
-    auto& ann = window_anns[i];
-    if (static_cast<float>(rand() % 100) / 100 < ignore_empty_prob &&
-        ann.labels.empty()) {
+    auto& ann = window_anns[i++];
+    if (ann.labels.empty() &&
+        static_cast<float>(rand() % 100) / 100 < ignore_empty_prob) {
       continue;
     }
     const auto& x_start = window[0];
@@ -176,7 +177,6 @@ size_t crop_and_save_img(const content_t& info,
     id_ss << info.id << "__" << x_stop - x_start << "__" << x_start << "___"
           << y_start;
     const string& id = id_ss.str();
-    // TODO: ignore empty patch
     auto& _bboxes = ann.bboxes;
     list<vector<double>> bboxes;
     {
@@ -270,10 +270,10 @@ size_t crop_and_save_img(const content_t& info,
         j++;
       }
     }
-    i++;
+    num_pathces++;
   }
   GDALClose(static_cast<GDALDatasetH>(dataset));
-  return i;
+  return num_pathces;
 }
 
 size_t single_split(const std::pair<content_t, string>& arguments,

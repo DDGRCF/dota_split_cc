@@ -1,5 +1,5 @@
 {
-  "nproc": 10,
+  "nproc": 1,
   "img_dirs": [
     "/disk0/dataset/Tianzhi/ship/train/images/"
   ],
@@ -17,7 +17,7 @@
   ],
   "img_rate_thr": 0.6,
   "iof_thr": 0.7,
-  "ignore_empty_prob": 0,
+  "ignore_empty_prob": 0.95,
   "no_padding": false,
   "padding_value": [
     104,

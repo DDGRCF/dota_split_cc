@@ -8,14 +8,14 @@
 
 namespace std {
 
-const int MaxN = 10;
-const float Eps = 1e-6;
+const int kMaxn = 10;
+const float kEps = 1e-6;
 
 enum OverLaps { kIoU = 0, kIoF = 1 };
 
 template <typename T>
 inline int sig(T d) {
-  return (d > Eps) - (d < -Eps);
+  return (d > kEps) - (d < -kEps);
 }
 
 template <typename T>
@@ -120,9 +120,9 @@ inline T rotated_boxes_intersection(Point<T> a, Point<T> b, Point<T> c,
   if (s1 == 0 || s2 == 0) return 0.;
   if (s1 == -1) point_swap<T>(&a, &b);
   if (s2 == -1) point_swap<T>(&c, &d);
-  Point<T> p[MaxN] = {o, a, b};
+  Point<T> p[kMaxn] = {o, a, b};
   uint8_t n = 3;
-  Point<T> pp[MaxN];
+  Point<T> pp[kMaxn];
   polygon_cut<T>(p, n, o, c, pp);
   polygon_cut<T>(p, n, c, d, pp);
   polygon_cut<T>(p, n, d, o, pp);
@@ -132,8 +132,9 @@ inline T rotated_boxes_intersection(Point<T> a, Point<T> b, Point<T> c,
 }
 
 template <typename T>
-inline T rotated_boxes_intersection(Point<T> (&pts1)[MaxN], const uint8_t& n1,
-                                    Point<T> (&pts2)[MaxN], const uint8_t& n2) {
+inline T rotated_boxes_intersection(Point<T> (&pts1)[kMaxn], const uint8_t& n1,
+                                    Point<T> (&pts2)[kMaxn],
+                                    const uint8_t& n2) {
   if (area<T>(pts1, n1) < 0) point_reverse<T>(pts1, pts1 + n1);
   if (area<T>(pts2, n2) < 0) point_reverse<T>(pts2, pts2 + n2);
   pts1[n1] = pts1[0];
@@ -158,9 +159,9 @@ inline T single_poly_iou_rotated(T const* const box1_raw,
                     (is_same<typename decay<T>::type, float>::value ||
                      is_same<typename decay<T>::type, double>::value),
                 "box1 and box2 must be float or double");
-  Point<T> pts1[MaxN];
+  Point<T> pts1[kMaxn];
   const uint8_t n1 = 4;
-  Point<T> pts2[MaxN];
+  Point<T> pts2[kMaxn];
   const uint8_t n2 = 4;
 
   for (uint8_t i = 0; i < 4; ++i) {

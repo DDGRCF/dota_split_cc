@@ -10,19 +10,22 @@
     1024
   ],
   "gaps": [
-    200
+    500
   ],
   "rates": [
-    1.0
+    0.5,
+    1.0,
+    1.5
   ],
   "img_rate_thr": 0.6,
   "iof_thr": 0.7,
   "no_padding": false,
+  "ignore_empty_prob": 0.9,
   "padding_value": [
     104,
     116,
     124
   ],
-  "save_dir": "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/dota_split/dota_img_split/resources/ss_val_split/",
+  "save_dir": "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/dota_split/dota_img_split/resources/ss_val_split_dota/",
   "save_ext": ".png"
 }
