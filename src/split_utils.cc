@@ -91,7 +91,8 @@ list<vector<size_t>> get_sliding_window(const content_t& info,
         float img_area = (_x2 - _x1) * (_y2 - _y1);
         float win_area = (x2 - x1) * (y2 - y1);
         float img_rate = img_area / win_area;
-        if (img_rate < img_rate_thr) {
+        if (x_start.size() > 1 && y_start.size() > 1 &&
+            img_rate < img_rate_thr) {
           continue;
         }
         windows.push_back(vector<size_t>{x1, y1, x2, y2});
@@ -228,8 +229,9 @@ size_t crop_and_save_img(const content_t& info,
         memset(buf, static_cast<unsigned char>(padding_value[pi]),
                _x_num * _y_num * data_size);
         CPLErr ret;
-        ret = src_band->RasterIO(GF_Read, x_start, y_start, x_num, y_num, buf,
-                                 _x_num, _y_num, data_type, 0, 0);
+        ret =
+            src_band->RasterIO(GF_Read, x_start, y_start, x_num, y_num, buf,
+                               x_num, y_num, data_type, 0, data_size * _x_num);
         CHECK_F(ret < CE_Failure, "RasterIO %s: %s", info.filename.c_str(),
                 CPLGetLastErrorMsg());
         ret = dst_band->RasterIO(GF_Write, 0, 0, _x_num, _y_num, buf, _x_num,
@@ -265,8 +267,10 @@ size_t crop_and_save_img(const content_t& info,
                                  : lhs + " " + std::to_string(rhs);
             });
         const char diff = !ann.trunc[j] ? ann.diffs[j] + '0' : '2';
-        output_file << outline << " " << info.ann.labels[j] << " " << diff
-                    << endl;
+        output_file << outline << " " << info.ann.labels[j] << " " << diff;
+        if (j < bboxes.size() - 1) {
+          output_file << endl;
+        }
         j++;
       }
     }

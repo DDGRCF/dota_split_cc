@@ -55,6 +55,9 @@ content_t _load_dota_txt(const string& txt_file) {
         if (left != std::string::npos) {
           line = line.substr(0, left);
         }
+        if (line.empty()) {
+          continue;
+        }
         if (str::starts_with(line, "gsd")) {
           auto pos = line.find(':');
           if (pos != string::npos) {
