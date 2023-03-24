@@ -179,6 +179,7 @@ size_t crop_and_save_img(const content_t& info,
           << y_start;
     const string& id = id_ss.str();
     auto& _bboxes = ann.bboxes;
+    auto& labels = ann.labels;
     list<vector<double>> bboxes;
     {
       for (auto& _bbox : _bboxes) {
@@ -267,7 +268,7 @@ size_t crop_and_save_img(const content_t& info,
                                  : lhs + " " + std::to_string(rhs);
             });
         const char diff = !ann.trunc[j] ? ann.diffs[j] + '0' : '2';
-        output_file << outline << " " << info.ann.labels[j] << " " << diff;
+        output_file << outline << " " << labels[j] << " " << diff;
         if (j < bboxes.size() - 1) {
           output_file << endl;
         }

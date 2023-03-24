@@ -1,7 +1,7 @@
 {
-  "nproc": 1,
+  "nproc": 10,
   "img_dirs": [
-    "/disk0/dataset/Tianzhi/ship/train/images/"
+    "data/DOTA/test/images/"
   ],
   "ann_dirs": null,
   "sizes": [
@@ -15,13 +15,12 @@
   ],
   "img_rate_thr": 0.6,
   "iof_thr": 0.7,
-  "ignore_empty_prob": 0,
   "no_padding": false,
   "padding_value": [
     104,
     116,
     124
   ],
-  "save_dir": "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/dota_split/dota_img_split/resources/ss_test_split/",
-  "save_ext": ".tif"
+  "save_dir": "data/split_ss_dota/test/",
+  "save_ext": ".png"
 }

@@ -1,10 +1,12 @@
 {
-  "nproc": 1,
+  "nproc": 10,
   "img_dirs": [
-    "/disk0/dataset/DOTA1_0/train/images/"
+    "data/DOTA/train/images/",
+    "data/DOTA/val/images/"
   ],
   "ann_dirs": [
-    "/disk0/dataset/DOTA1_0/train/labelTxt/"
+    "data/DOTA/train/labelTxt/",
+    "data/DOTA/val/labelTxt/"
   ],
   "sizes": [
     1024
@@ -20,12 +22,11 @@
   "img_rate_thr": 0.6,
   "iof_thr": 0.7,
   "no_padding": false,
-  "ignore_empty_prob": 0.9,
   "padding_value": [
     104,
     116,
     124
   ],
-  "save_dir": "/home/r/Scripts/2023-tianzhibei-competition/mmrotate/tools/tzb-tools/dota_split/dota_img_split/resources/ss_val_split_dota/",
+  "save_dir": "data/split_ms_dota/trainval/",
   "save_ext": ".png"
 }
