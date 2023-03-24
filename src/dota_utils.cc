@@ -70,7 +70,8 @@ content_t _load_dota_txt(const string& txt_file) {
           }
           continue;
         } else if (str::starts_with(line, "imagesource") ||
-                   str::starts_with(line, "NAN")) {
+                   str::starts_with(line, "NAN") ||
+                   str::starts_with(line, "NaN")) {
           continue;
         }
         auto line_split = str::split(line);
