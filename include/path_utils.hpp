@@ -4,17 +4,18 @@
 #include <dirent.h>
 #include <errno.h>
 #include <glob.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#include <filesystem>
 #include <initializer_list>
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
 
-namespace fs = std::filesystem;
-
 namespace path {
+
 static inline std::string path_join(
     const std::initializer_list<std::string> paths) {
   return std::accumulate(paths.begin(), paths.end(), std::string(""),
@@ -25,10 +26,13 @@ static inline std::string path_join(
 
 template <typename... Args>
 inline std::string join(Args&&... args) {
-  static_assert(((std::is_same_v<std::decay_t<Args>, std::string> ||
-                  std::is_same_v<std::decay_t<Args>, const char*>) ||
-                 ...),
-                "Args is not basic_string");
+  // static_assert(
+  //     ((std::is_same<typename std::decay<Args>::type, std::string>::value ||
+  //       std::is_same<typename std::decay<Args>::type, const char*>::value) ||
+  //      ...),
+  //     "Args is not basic_string"); // only support in c++17
+  int dummy[] = {(std::is_convertible<Args, std::string>::value, 0)...};
+  (void)dummy;
   return path_join({args...});
 }
 
@@ -71,22 +75,37 @@ inline std::string stem(const std::string& path) {
   }
 }
 
-inline bool is_exist(const fs::path& path) { return fs::exists(path); }
-
-inline bool is_dir(const fs::path& path) {
-  if (!is_exist(path)) {
-    errno = ENOENT;
+inline bool is_exist(const std::string& path) {
+  struct stat statbuf;
+  int ret = stat(path.c_str(), &statbuf);
+  if (ret == -1) {
     return false;
   }
-  return fs::is_directory(path);
+  return true;
 }
 
-inline bool is_file(const fs::path& path) {
+inline bool is_dir(const std::string& path) {
   if (!is_exist(path)) {
-    errno = ENOENT;
     return false;
   }
-  return fs::is_regular_file(path);
+  struct stat statbuf;
+  stat(path.c_str(), &statbuf);
+  if (!S_ISDIR(statbuf.st_mode)) {
+    return false;
+  }
+  return true;
+}
+
+inline bool is_file(const std::string& path) {
+  if (!is_exist(path)) {
+    return false;
+  }
+  struct stat statbuf;
+  stat(path.c_str(), &statbuf);
+  if (!S_ISREG(statbuf.st_mode)) {
+    return false;
+  }
+  return true;
 }
 
 inline std::vector<std::string> glob(const std::string& path) {

@@ -55,6 +55,9 @@ content_t _load_dota_txt(const string& txt_file) {
         if (left != std::string::npos) {
           line = line.substr(0, left);
         }
+        if (line.empty()) {
+          continue;
+        }
         if (str::starts_with(line, "gsd")) {
           auto pos = line.find(':');
           if (pos != string::npos) {
@@ -88,8 +91,8 @@ content_t _load_dota_txt(const string& txt_file) {
 }
 
 content_t _load_dota_single(const string& img_file, const string& ann_dir) {
-  static std::unordered_set<string> support_ext{"jpg", "JPG", "png", "tif",
-                                                "bmp"};
+  static const std::unordered_set<string> support_ext{"jpg", "JPG", "png",
+                                                      "tif", "bmp"};
   auto img_id = path::stem(img_file);
   auto ext = path::suffix(img_file);
   if (support_ext.find(ext) == support_ext.end()) {
@@ -111,7 +114,7 @@ content_t _load_dota_single(const string& img_file, const string& ann_dir) {
 
 vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
                             const int& nthread) {
-  LOG(INFO) << "starting loading DOTA dataset information." << endl;
+  LOG(INFO) << "starting loading the dataset information." << endl;
   auto start_time = std::chrono::system_clock::now();
   auto _load_func = [&ann_dir](const string& img_file) {
     return _load_dota_single(img_file, ann_dir);
@@ -120,7 +123,7 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
   vector<content_t> contents;
   contents.reserve(path_set.size());
   if (nthread > 1) {
-    auto pool = std::threadpool(nthread);  // try openmp
+    std::threadpool pool(nthread);  // try openmp
     auto contents_future = pool.map_container(_load_func, path_set);
     for (auto& content_future : contents_future) {
       contents.push_back(content_future.get());
@@ -134,9 +137,11 @@ vector<content_t> load_dota(const string& img_dir, const string& ann_dir,
     std::transform(path_set.begin(), path_set.end(),
                    std::back_inserter(contents), _load_func);
   }
-  contents.erase(std::remove_if(
-      contents.begin(), contents.end(),
-      [](const content_t& content) { return content.gsd == kUnSupport; }));
+  contents.erase(std::remove_if(contents.begin(), contents.end(),
+                                [](const content_t& content) {
+                                  return content.gsd == kUnSupport;
+                                }),
+                 contents.end());
   auto end_time = std::chrono::system_clock::now();
   LOG(INFO) << "finishing loading dataset, get " << contents.size()
             << " images,"

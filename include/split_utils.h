@@ -13,7 +13,7 @@ size_t single_split(const std::pair<content_t, std::string>& arguments,
                     const bool& no_padding,
                     const std::vector<float>& padding_value,
                     const std::string& save_dir, const std::string& anno_dir,
-                    const std::string& img_ext, const size_t& total,
-                    size_t& prog, std::mutex& lock);
+                    const std::string& img_ext, const float& ignore_empty_prob,
+                    const size_t& total, size_t& prog, std::mutex& lock);
 
 #endif
