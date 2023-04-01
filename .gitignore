@@ -36,3 +36,5 @@ resources/
 build/
 test/
 third_party/
+.ycm_extra_conf.py
+.cache/

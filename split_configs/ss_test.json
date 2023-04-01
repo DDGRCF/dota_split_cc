@@ -1,14 +1,14 @@
 {
-  "nproc": 10,
+  "nproc": 5,
   "img_dirs": [
-    "data/DOTA/test/images/"
+    "/disk0/dataset/TianzhiBk/LargeDataset/base_images/"
   ],
   "ann_dirs": null,
   "sizes": [
     1024
   ],
   "gaps": [
-    200
+    0
   ],
   "rates": [
     1.0
@@ -17,10 +17,10 @@
   "iof_thr": 0.7,
   "no_padding": false,
   "padding_value": [
-    104,
-    116,
-    124
+    0,
+    0,
+    0
   ],
-  "save_dir": "data/split_ss_dota/test/",
+  "save_dir": "resources/ss_split/",
   "save_ext": ".png"
 }
