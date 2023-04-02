@@ -1,4 +1,4 @@
-# Dota Img Slit for MMRotate[CC]
+# Dota Img Split for MMRotate[CC]
 
 ## Description 
 This repo is for [MMRotate-1.x](https://github.com/open-mmlab/mmrotate.git). And You
