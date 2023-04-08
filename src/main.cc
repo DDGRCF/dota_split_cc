@@ -94,7 +94,7 @@ void deal(const json &configs) {
 
   LOG(INFO) << "loading original data!!!" << endl;
 
-  std::list<std::pair<content_t, string>> infos;  // 没有随机访问单节点
+  std::list<std::pair<content_t, string>> infos; // 没有随机访问单节点
   for (size_t i = 0; i < img_dirs.size(); i++) {
     auto &&img_dir = img_dirs[i].get<string>();
     const string ann_dir = ann_dirs.empty() ? "" : ann_dirs[i].get<string>();

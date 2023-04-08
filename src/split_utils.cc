@@ -171,7 +171,7 @@ crop_and_save_img(const content_t &info, const list<vector<size_t>> &windows,
   for (auto &window : windows) {
     auto &ann = window_anns[i++];
     if (ann.labels.empty() &&
-        static_cast<float>(rand() % 100) / 100 < ignore_empty_prob) {
+        static_cast<float>(rand() % 10000) / 10000 < ignore_empty_prob) {
       continue;
     }
     const auto &x_start = window[0];
